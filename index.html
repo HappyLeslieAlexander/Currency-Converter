@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>货币转换器</title>
   <link rel="icon" href="https://cdn.jsdelivr.net/gh/HappyLeslieAlexander/OSS/favicon.ico">
+  <!-- Flag Icon CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.5.0/css/flag-icon.min.css">
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <!-- jQuery（Select2依赖） -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     :root {
@@ -285,7 +293,7 @@
       >
     </div>
     <div class="input-group">
-      <select id="fromCurrency" onchange="handleCurrencyChange()"></select>
+      <select id="fromCurrency"></select>
     </div>
     <div class="button-group">
       <button onclick="openCurrencyModal()">管理货币</button>
@@ -314,6 +322,53 @@
   </div>
 
   <script>
+    // 货币对应国旗映射（使用 ISO 国家代码，部分货币可能需要自定义映射）
+    const currencyFlagMapping = {
+      "USD": "us",
+      "EUR": "eu",
+      "JPY": "jp",
+      "GBP": "gb",
+      "CNY": "cn",
+      "CAD": "ca",
+      "AUD": "au",
+      "CHF": "ch",
+      "SEK": "se",
+      "SGD": "sg",
+      "AED": "ae",
+      "ARS": "ar",
+      "BRL": "br",
+      "DKK": "dk",
+      "HKD": "hk",
+      "HUF": "hu",
+      "IDR": "id",
+      "ILS": "il",
+      "INR": "in",
+      "KRW": "kr",
+      "MXN": "mx",
+      "MYR": "my",
+      "NOK": "no",
+      "NZD": "nz",
+      "PHP": "ph",
+      "PKR": "pk",
+      "RUB": "ru",
+      "SAR": "sa",
+      "THB": "th",
+      "TRY": "tr",
+      "ZAR": "za"
+    };
+
+    function getFlag(currency) {
+      return currencyFlagMapping[currency] || currency.substring(0,2).toLowerCase();
+    }
+
+    // 为 Select2 定义自定义模板，添加国旗图标
+    function formatCurrency (data) {
+      if (!data.id) { return data.text; }
+      var flagCode = getFlag(data.id);
+      var $result = $('<span><span class="flag-icon flag-icon-' + flagCode + '" style="margin-right: 6px;"></span>' + data.text + '</span>');
+      return $result;
+    }
+
     const commonCurrencies = ["USD", "EUR", "JPY", "GBP", "CNY", "CAD", "AUD", "CHF", "SEK", "SGD"];
     let selectedCurrencies = JSON.parse(localStorage.getItem("selectedCurrencies")) || [...commonCurrencies];
     let allCurrencies = [];
@@ -327,7 +382,6 @@
         if (showLoading) {
           document.getElementById('currencyList').innerHTML = '<div class="loading">加载中...</div>';
         }
-        
         const response = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
         currentRates = response.data.rates;
         lastRateUpdate = new Date();
@@ -364,7 +418,7 @@
       }
       rateUpdateInterval = setInterval(async () => {
         await fetchRates(false);
-      }, 300000); // 每5分钟更新一次
+      }, 300000);
     }
 
     function handleModalClick(event) {
@@ -393,33 +447,27 @@
     function displayCurrencyOptions(currenciesToDisplay = allCurrencies) {
       const container = document.getElementById("currencyOptions");
       container.innerHTML = "";
-
       if (currenciesToDisplay.length === 0) {
         container.innerHTML = '<div class="no-results">未找到匹配的货币</div>';
         return;
       }
-
       const chunkSize = 25;
       const sortedCurrencies = [...currenciesToDisplay].sort();
-      
       for (let i = 0; i < sortedCurrencies.length; i += chunkSize) {
         const chunk = sortedCurrencies.slice(i, i + chunkSize);
         const groupDiv = document.createElement("div");
         groupDiv.className = "currency-box";
-        
         const title = document.createElement("div");
         title.textContent = `货币 ${i+1}-${Math.min(i+chunkSize, sortedCurrencies.length)}`;
         title.style.fontWeight = "bold";
         title.style.marginBottom = "10px";
         groupDiv.appendChild(title);
-
         chunk.forEach(currency => {
           const label = document.createElement("label");
           label.className = "currency-item";
           if (currentSelections.has(currency)) {
             label.classList.add("selected-currency");
           }
-          
           const checkbox = document.createElement("input");
           checkbox.type = "checkbox";
           checkbox.checked = currentSelections.has(currency);
@@ -432,8 +480,11 @@
             label.classList.toggle("selected-currency", checkbox.checked);
             updateSaveButtonState();
           };
-
           label.appendChild(checkbox);
+          const flagSpan = document.createElement("span");
+          flagSpan.className = `flag-icon flag-icon-${getFlag(currency)}`;
+          flagSpan.style.margin = "0 8px 0 4px";
+          label.appendChild(flagSpan);
           label.appendChild(document.createTextNode(` ${currency}`));
           groupDiv.appendChild(label);
         });
@@ -451,17 +502,12 @@
         alert('请至少选择一种货币');
         return;
       }
-      
       selectedCurrencies = Array.from(currentSelections);
       localStorage.setItem("selectedCurrencies", JSON.stringify(selectedCurrencies));
       convertToMultipleCurrencies();
       closeCurrencyModal();
-      
-      // Show success message
       const container = document.getElementById('currencyList');
-      container.insertAdjacentHTML('beforebegin', 
-        '<div class="success-message">货币选择已更新</div>'
-      );
+      container.insertAdjacentHTML('beforebegin', '<div class="success-message">货币选择已更新</div>');
       setTimeout(() => {
         const message = document.querySelector('.success-message');
         if (message) message.remove();
@@ -472,18 +518,13 @@
       if (!confirm('确定要重置为默认货币列表吗？')) {
         return;
       }
-      
       selectedCurrencies = [...commonCurrencies];
       currentSelections = new Set(selectedCurrencies);
       localStorage.setItem("selectedCurrencies", JSON.stringify(selectedCurrencies));
       document.getElementById("fromCurrency").value = "USD";
       convertToMultipleCurrencies();
-      
-      // Show success message
       const container = document.getElementById('currencyList');
-      container.insertAdjacentHTML('beforebegin', 
-        '<div class="success-message">已重置为默认货币</div>'
-      );
+      container.insertAdjacentHTML('beforebegin', '<div class="success-message">已重置为默认货币</div>');
       setTimeout(() => {
         const message = document.querySelector('.success-message');
         if (message) message.remove();
@@ -493,8 +534,7 @@
     function validateAndConvert(value) {
       const amount = parseFloat(value);
       if (isNaN(amount) || amount < 0) {
-        document.getElementById('currencyList').innerHTML = 
-          '<div class="error-message">请输入有效的金额</div>';
+        document.getElementById('currencyList').innerHTML = '<div class="error-message">请输入有效的金额</div>';
         return;
       }
       convertToMultipleCurrencies();
@@ -503,8 +543,7 @@
     function handleCurrencyChange() {
       const fromCurrency = document.getElementById('fromCurrency').value;
       if (!currentRates || !currentRates[fromCurrency]) {
-        document.getElementById('currencyList').innerHTML = 
-          '<div class="error-message">无效的源货币</div>';
+        document.getElementById('currencyList').innerHTML = '<div class="error-message">无效的源货币</div>';
         return;
       }
       convertToMultipleCurrencies();
@@ -513,24 +552,24 @@
     async function populateCurrencies() {
       const rates = await fetchRates();
       if (!rates) return;
-      
       const fromSelect = document.getElementById("fromCurrency");
       fromSelect.innerHTML = "";
-      
       allCurrencies = Object.keys(rates).sort();
-      
-      // 创建并填充选项
       const fragment = document.createDocumentFragment();
       allCurrencies.forEach(currency => {
         const option = document.createElement("option");
         option.value = currency;
-        option.textContent = currency;
+        option.text = currency;
         fragment.appendChild(option);
       });
-      
       fromSelect.appendChild(fragment);
       fromSelect.value = "USD";
-      
+      // 使用 Select2 初始化下拉框，显示国旗图标
+      $('#fromCurrency').select2({
+        templateResult: formatCurrency,
+        templateSelection: formatCurrency,
+        minimumResultsForSearch: Infinity
+      });
       startRateUpdateInterval();
       convertToMultipleCurrencies();
     }
@@ -539,38 +578,31 @@
       const amount = parseFloat(document.getElementById('amount').value) || 0;
       const fromCurrency = document.getElementById('fromCurrency').value;
       const currencyList = document.getElementById('currencyList');
-      
       if (!currentRates) {
         currencyList.innerHTML = '<div class="error-message">汇率数据未加载</div>';
         return;
       }
-
       if (!currentRates[fromCurrency]) {
         currencyList.innerHTML = '<div class="error-message">无效的源货币</div>';
         return;
       }
-
       if (amount < 0) {
         currencyList.innerHTML = '<div class="error-message">金额不能为负数</div>';
         return;
       }
-
       currencyList.innerHTML = '';
       const fragment = document.createDocumentFragment();
-
-      // 对选中的货币按字母顺序排序后显示转换结果
       [...selectedCurrencies].sort().forEach(currency => {
         const toRate = currentRates[currency];
         if (!toRate) return;
-
         const convertedAmount = amount * (toRate / currentRates[fromCurrency]);
         const div = document.createElement('div');
         div.className = 'result-item';
         div.innerHTML = `
-          <strong>${amount.toLocaleString()} ${fromCurrency}</strong> 
+          <strong><span class="flag-icon flag-icon-${getFlag(fromCurrency)}" style="margin-right: 6px;"></span>${amount.toLocaleString()} ${fromCurrency}</strong> 
           = 
           <strong style="color: var(--secondary-color);">
-            ${convertedAmount.toLocaleString(undefined, {
+            <span class="flag-icon flag-icon-${getFlag(currency)}" style="margin-right: 6px;"></span>${convertedAmount.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })} ${currency}
@@ -578,15 +610,11 @@
         `;
         fragment.appendChild(div);
       });
-
       currencyList.appendChild(fragment);
     }
 
-    // 初始化
     document.addEventListener('DOMContentLoaded', () => {
       populateCurrencies();
-      
-      // 添加键盘事件监听
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           closeCurrencyModal();
@@ -594,7 +622,6 @@
       });
     });
 
-    // 清理定时器
     window.addEventListener('beforeunload', () => {
       if (rateUpdateInterval) {
         clearInterval(rateUpdateInterval);
