@@ -453,7 +453,7 @@
           };
           label.appendChild(checkbox);
           const flagSpan = document.createElement("span");
-          flagSpan.className = `flag-icon flag-icon-${getFlag(currency)}`;
+          flagSpan.className = `fi fi-${getFlag(currency)}`;
           flagSpan.style.margin = "0 8px 0 4px";
           label.appendChild(flagSpan);
           label.appendChild(document.createTextNode(` ${currency}`));
@@ -570,10 +570,10 @@
         const div = document.createElement('div');
         div.className = 'result-item';
         div.innerHTML = `
-          <strong><span class="flag-icon flag-icon-${getFlag(fromCurrency)}" style="margin-right: 6px;"></span>${amount.toLocaleString()} ${fromCurrency}</strong> 
+          <strong><span class="fi fi-${getFlag(fromCurrency)}" style="margin-right: 6px;"></span>${amount.toLocaleString()} ${fromCurrency}</strong> 
           = 
           <strong style="color: var(--secondary-color);">
-            <span class="flag-icon flag-icon-${getFlag(currency)}" style="margin-right: 6px;"></span>${convertedAmount.toLocaleString(undefined, {
+            <span class="fi fi-${getFlag(currency)}" style="margin-right: 6px;"></span>${convertedAmount.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })} ${currency}
