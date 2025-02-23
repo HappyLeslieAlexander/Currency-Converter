@@ -336,7 +336,7 @@
     function formatCurrency (data) {
       if (!data.id) { return data.text; }
       var flagCode = getFlag(data.id);
-      var $result = $('<span><span class="flag-icon flag-icon-' + flagCode + '" style="margin-right: 6px;"></span>' + data.text + '</span>');
+      var $result = $('<span><span class="fi fi-' + flagCode + '" style="margin-right: 6px;"></span>' + data.text + '</span>');
       return $result;
     }
 
