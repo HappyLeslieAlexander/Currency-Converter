@@ -543,6 +543,8 @@
         templateSelection: formatCurrency,
         minimumResultsForSearch: Infinity
       });
+      // 添加更改事件监听，确保切换原始货币时更新转换结果
+      $('#fromCurrency').on('change', handleCurrencyChange);
       startRateUpdateInterval();
       convertToMultipleCurrencies();
     }
