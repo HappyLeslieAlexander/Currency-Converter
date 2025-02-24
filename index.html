@@ -13,6 +13,8 @@
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- Select2 JS -->
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <!-- Sortable.js -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     :root {
@@ -172,10 +174,34 @@
       text-align: left;
       border: 1px solid #eee;
       transition: transform var(--transition-speed);
+      cursor: move;
+      user-select: none;
+      position: relative;
     }
 
     .result-item:hover {
       transform: translateX(5px);
+    }
+
+    .result-item.sortable-ghost {
+      opacity: 0.5;
+      background: #e3f2fd;
+    }
+
+    .result-item.sortable-chosen {
+      background: #e3f2fd;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .result-item::before {
+      content: "⋮";
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      font-size: 20px;
+      cursor: move;
     }
     
     .no-results {
@@ -344,11 +370,13 @@
 
     const commonCurrencies = ["USD", "EUR", "JPY", "GBP", "CNY", "CAD", "AUD", "CHF", "SEK", "SGD"];
     let selectedCurrencies = JSON.parse(localStorage.getItem("selectedCurrencies")) || [...commonCurrencies];
+    let currencyOrder = JSON.parse(localStorage.getItem("currencyOrder")) || selectedCurrencies;
     let allCurrencies = [];
     let currentSelections = new Set(selectedCurrencies);
     let lastRateUpdate = null;
     let currentRates = null;
     let rateUpdateInterval = null;
+    let sortableList = null;
 
     async function fetchRates(showLoading = true) {
       try {
@@ -477,6 +505,11 @@
       }
       selectedCurrencies = Array.from(currentSelections);
       localStorage.setItem("selectedCurrencies", JSON.stringify(selectedCurrencies));
+      // 更新顺序数组，保留现有顺序并添加新选择的货币
+      currencyOrder = currencyOrder.filter(currency => currentSelections.has(currency));
+      const newCurrencies = [...currentSelections].filter(currency => !currencyOrder.includes(currency));
+      currencyOrder = [...currencyOrder, ...newCurrencies];
+      localStorage.setItem("currencyOrder", JSON.stringify(currencyOrder));
       convertToMultipleCurrencies();
       closeCurrencyModal();
       const container = document.getElementById('currencyList');
@@ -492,8 +525,10 @@
         return;
       }
       selectedCurrencies = [...commonCurrencies];
+      currencyOrder = [...commonCurrencies];
       currentSelections = new Set(selectedCurrencies);
       localStorage.setItem("selectedCurrencies", JSON.stringify(selectedCurrencies));
+      localStorage.setItem("currencyOrder", JSON.stringify(currencyOrder));
       document.getElementById("fromCurrency").value = "USD";
       convertToMultipleCurrencies();
       const container = document.getElementById('currencyList');
@@ -520,6 +555,26 @@
         return;
       }
       convertToMultipleCurrencies();
+    }
+
+    function initializeSortable() {
+      const currencyList = document.getElementById('currencyList');
+      if (sortableList) {
+        sortableList.destroy();
+      }
+      sortableList = new Sortable(currencyList, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        onEnd: function(evt) {
+          const items = evt.to.children;
+          currencyOrder = Array.from(items).map(item => {
+            const currencyText = item.textContent.trim();
+            return currencyText.split(' ').pop(); // 获取货币代码
+          });
+          localStorage.setItem("currencyOrder", JSON.stringify(currencyOrder));
+        }
+      });
     }
 
     async function populateCurrencies() {
@@ -565,11 +620,24 @@
         currencyList.innerHTML = '<div class="error-message">金额不能为负数</div>';
         return;
       }
+      
+      // 创建一个映射来存储当前的排序顺序
+      const orderMap = new Map(currencyOrder.map((currency, index) => [currency, index]));
+      
+      // 过滤并排序货币
+      const currenciesToDisplay = selectedCurrencies
+        .filter(currency => currentRates[currency])
+        .sort((a, b) => {
+          const orderA = orderMap.has(a) ? orderMap.get(a) : Infinity;
+          const orderB = orderMap.has(b) ? orderMap.get(b) : Infinity;
+          return orderA - orderB;
+        });
+
       currencyList.innerHTML = '';
       const fragment = document.createDocumentFragment();
-      [...selectedCurrencies].sort().forEach(currency => {
+
+      currenciesToDisplay.forEach(currency => {
         const toRate = currentRates[currency];
-        if (!toRate) return;
         const convertedAmount = amount * (toRate / currentRates[fromCurrency]);
         const div = document.createElement('div');
         div.className = 'result-item';
@@ -585,7 +653,9 @@
         `;
         fragment.appendChild(div);
       });
+
       currencyList.appendChild(fragment);
+      initializeSortable();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
