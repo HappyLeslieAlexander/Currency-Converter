@@ -318,6 +318,17 @@
         oninput="validateAndConvert(this.value)"
       >
     </div>
+    <!-- 源货币搜索框，用于筛选下方的下拉选择 -->
+    <div class="input-group">
+      <input 
+        type="text" 
+        id="sourceCurrencySearch" 
+        placeholder="输入ISO代码搜索源货币" 
+        oninput="filterSourceCurrency()"
+        autocomplete="off"
+      >
+    </div>
+    <!-- 源货币下拉选择（单选） -->
     <div class="input-group">
       <select id="fromCurrency"></select>
     </div>
@@ -531,6 +542,7 @@
       currentSelections = new Set(selectedCurrencies);
       localStorage.setItem("selectedCurrencies", JSON.stringify(selectedCurrencies));
       localStorage.setItem("currencyOrder", JSON.stringify(currencyOrder));
+      // 同时重置源货币选择为默认 USD
       document.getElementById("fromCurrency").value = "USD";
       convertToMultipleCurrencies();
       const container = document.getElementById('currencyList');
@@ -559,6 +571,48 @@
       convertToMultipleCurrencies();
     }
 
+    // 源货币搜索过滤函数
+    function filterSourceCurrency() {
+      const searchTerm = document.getElementById('sourceCurrencySearch').value.trim().toUpperCase();
+      const filtered = allCurrencies.filter(currency => currency.includes(searchTerm));
+      updateSourceCurrencyOptions(filtered);
+    }
+
+    // 更新源货币下拉框选项，并保留select2效果
+    function updateSourceCurrencyOptions(currenciesToDisplay) {
+      const fromSelect = document.getElementById("fromCurrency");
+      const selectedValue = fromSelect.value;
+      fromSelect.innerHTML = "";
+      // 若无搜索结果，则显示提示信息
+      if (currenciesToDisplay.length === 0) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.text = "无匹配货币";
+        fromSelect.appendChild(option);
+      } else {
+        currenciesToDisplay.sort().forEach(currency => {
+          const option = document.createElement("option");
+          option.value = currency;
+          option.text = currency;
+          fromSelect.appendChild(option);
+        });
+      }
+      // 如果之前选中的源货币仍存在则选中，否则默认选中第一个
+      if ([...fromSelect.options].some(opt => opt.value === selectedValue)) {
+        fromSelect.value = selectedValue;
+      } else if (fromSelect.options.length > 0) {
+        fromSelect.selectedIndex = 0;
+      }
+      // 重新初始化Select2
+      $('#fromCurrency').select2({
+        templateResult: formatCurrency,
+        templateSelection: formatCurrency,
+        minimumResultsForSearch: Infinity
+      }).on('change', handleCurrencyChange);
+      // 调用转换函数更新结果
+      handleCurrencyChange();
+    }
+
     function initializeSortable() {
       const currencyList = document.getElementById('currencyList');
       if (sortableList) {
@@ -585,22 +639,20 @@
       const fromSelect = document.getElementById("fromCurrency");
       fromSelect.innerHTML = "";
       allCurrencies = Object.keys(rates).sort();
-      const fragment = document.createDocumentFragment();
+      // 初始填充所有货币到源货币下拉框
       allCurrencies.forEach(currency => {
         const option = document.createElement("option");
         option.value = currency;
         option.text = currency;
-        fragment.appendChild(option);
+        fromSelect.appendChild(option);
       });
-      fromSelect.appendChild(fragment);
       fromSelect.value = "USD";
-      // 使用 Select2 初始化下拉框，显示国旗图标
+      // 初始化Select2，下拉框中已内置搜索功能，但我们另加了自定义搜索框
       $('#fromCurrency').select2({
         templateResult: formatCurrency,
         templateSelection: formatCurrency,
         minimumResultsForSearch: Infinity
       });
-      // 添加更改事件监听，确保切换原始货币时更新转换结果
       $('#fromCurrency').on('change', handleCurrencyChange);
       startRateUpdateInterval();
       convertToMultipleCurrencies();
