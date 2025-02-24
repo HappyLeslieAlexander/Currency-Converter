@@ -368,7 +368,7 @@
       return $result;
     }
 
-    const commonCurrencies = ["USD", "EUR", "JPY", "GBP", "CNY", "CAD", "AUD", "CHF", "SEK", "SGD"];
+    const commonCurrencies = ["EUR", "JPY", "GBP", "CNY", "CAD", "AUD", "CHF", "SEK", "SGD"];
     let selectedCurrencies = JSON.parse(localStorage.getItem("selectedCurrencies")) || [...commonCurrencies];
     let currencyOrder = JSON.parse(localStorage.getItem("currencyOrder")) || selectedCurrencies;
     let allCurrencies = [];
