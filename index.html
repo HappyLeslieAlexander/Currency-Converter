@@ -1,14 +1,18 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>货币转换器</title>
+  <title>Currency Converter</title>
   <link rel="icon" href="https://cdn.jsdelivr.net/gh/HappyLeslieAlexander/OSS/favicon.ico">
   <!-- Flag Icon CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css">
   <!-- Select2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- jQuery（Select2依赖） -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- Select2 JS -->
@@ -18,18 +22,24 @@
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <style>
     :root {
-      --primary-color: #2196f3;
-      --secondary-color: #2c7be5;
-      --background-color: #f3f4f6;
-      --container-bg: #ffffff;
-      --border-color: #ddd;
-      --input-padding: 10px;
-      --border-radius: 6px;
-      --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      --primary-color: #667eea;
+      --primary-dark: #5a67d8;
+      --secondary-color: #764ba2;
+      --accent-color: #f093fb;
+      --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --container-bg: rgba(255, 255, 255, 0.95);
+      --container-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      --border-color: #e2e8f0;
+      --input-padding: 14px 18px;
+      --border-radius: 12px;
       --transition-speed: 0.3s;
-      --font-family: -apple 'PingFang SC', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      --error-color: #dc3545;
-      --success-color: #28a745;
+      --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      --error-color: #e53e3e;
+      --success-color: #38a169;
+      --text-primary: #2d3748;
+      --text-secondary: #718096;
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --glass-border: rgba(255, 255, 255, 0.18);
     }
     
     * {
@@ -42,67 +52,249 @@
       margin: 0;
       padding: 20px;
       font-family: var(--font-family);
-      background-color: var(--background-color);
+      background: var(--background-gradient);
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
-      line-height: 1.5;
+      line-height: 1.6;
+      color: var(--text-primary);
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      pointer-events: none;
+      z-index: -1;
     }
     
     .container {
       background: var(--container-bg);
-      padding: 25px 30px;
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      padding: 40px;
       border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
+      box-shadow: var(--container-shadow);
       text-align: center;
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
+      position: relative;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border-radius: var(--border-radius);
+      pointer-events: none;
+    }
+
+    .header {
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      margin: 0;
+      font-weight: 400;
+    }
+
+    .language-selector {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+    }
+
+    .language-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text-primary);
+      cursor: pointer;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+      transition: all var(--transition-speed);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .language-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .language-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: var(--container-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      backdrop-filter: blur(20px);
+      min-width: 200px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .language-option {
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: background-color var(--transition-speed);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .language-option:hover {
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    .language-option.active {
+      background: rgba(102, 126, 234, 0.2);
+      font-weight: 500;
     }
     
     .input-group {
-      margin: 15px 0;
+      margin: 20px 0;
       position: relative;
     }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: var(--text-primary);
+      text-align: left;
+      font-size: 14px;
+    }
     
-    select, input[type="number"], input[type="text"], button {
+    select, input[type="number"], input[type="text"] {
       width: 100%;
       padding: var(--input-padding);
       margin: 5px 0;
       font-size: 16px;
-      border: 1px solid var(--border-color);
+      border: 2px solid var(--border-color);
       border-radius: var(--border-radius);
       outline: none;
-      transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+      transition: all var(--transition-speed);
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      font-family: var(--font-family);
+      position: relative;
+      z-index: 1;
     }
 
     select:focus, input:focus {
       border-color: var(--primary-color);
-      box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-1px);
+    }
+
+    .input-icon {
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+      z-index: 2;
     }
     
     button {
       cursor: pointer;
-      background-color: var(--primary-color);
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
       color: #fff;
       border: none;
-      transition: background-color var(--transition-speed), transform var(--transition-speed);
-      font-weight: 500;
+      padding: 16px 24px;
+      margin: 8px 0;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: var(--border-radius);
+      transition: all var(--transition-speed);
+      font-family: var(--font-family);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+
+    button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    button:hover::before {
+      left: 100%;
     }
     
     button:hover {
-      background-color: var(--secondary-color);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
 
     button:active {
-      transform: translateY(1px);
+      transform: translateY(0);
     }
 
     button:disabled {
-      background-color: #ccc;
+      background: #cbd5e0;
       cursor: not-allowed;
       transform: none;
+      box-shadow: none;
+    }
+
+    button:disabled::before {
+      display: none;
+    }
+
+    .primary-button {
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    }
+
+    .secondary-button {
+      background: linear-gradient(135deg, var(--text-secondary), #4a5568);
+      box-shadow: 0 4px 15px rgba(113, 128, 150, 0.3);
+    }
+
+    .secondary-button:hover {
+      box-shadow: 0 8px 25px rgba(113, 128, 150, 0.4);
     }
     
     .modal {
@@ -167,41 +359,78 @@
     }
     
     .result-item {
-      margin: 10px 0;
-      padding: 12px;
-      background: #f8f9fa;
+      margin: 12px 0;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
       border-radius: var(--border-radius);
       text-align: left;
-      border: 1px solid #eee;
-      transition: transform var(--transition-speed);
+      border: 1px solid var(--glass-border);
+      transition: all var(--transition-speed);
       cursor: move;
       user-select: none;
       position: relative;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     }
 
     .result-item:hover {
-      transform: translateX(5px);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 1);
     }
 
     .result-item.sortable-ghost {
       opacity: 0.5;
-      background: #e3f2fd;
+      background: rgba(102, 126, 234, 0.1);
+      transform: rotate(5deg);
     }
 
     .result-item.sortable-chosen {
-      background: #e3f2fd;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      background: rgba(102, 126, 234, 0.1);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+      transform: scale(1.02);
     }
 
     .result-item::before {
-      content: "⋮";
+      content: "\f0c9";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
       position: absolute;
-      right: 12px;
+      right: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #999;
-      font-size: 20px;
+      color: var(--text-secondary);
+      font-size: 16px;
       cursor: move;
+      opacity: 0.6;
+      transition: opacity var(--transition-speed);
+    }
+
+    .result-item:hover::before {
+      opacity: 1;
+    }
+
+    .currency-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 18px;
+      font-weight: 500;
+    }
+
+    .currency-from {
+      color: var(--text-primary);
+    }
+
+    .currency-to {
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+
+    .conversion-arrow {
+      color: var(--text-secondary);
+      margin: 0 15px;
+      font-size: 16px;
     }
     
     .no-results {
@@ -305,60 +534,643 @@
   </style>
 </head>
 <body>
+  <div class="language-selector">
+    <button class="language-btn" onclick="toggleLanguageDropdown()">
+      <i class="fas fa-globe"></i>
+      <span id="currentLanguage">English</span>
+      <i class="fas fa-chevron-down"></i>
+    </button>
+    <div class="language-dropdown" id="languageDropdown">
+      <!-- Languages will be populated by JavaScript -->
+    </div>
+  </div>
+
   <div class="container">
-    <h1>货币转换器</h1>
+    <div class="header">
+      <h1 data-i18n="title">Currency Converter</h1>
+      <p data-i18n="subtitle">Convert currencies with real-time exchange rates</p>
+    </div>
+
     <div class="input-group">
+      <label for="amount" data-i18n="amount_label">Amount</label>
       <input 
         type="number" 
         id="amount" 
-        placeholder="输入金额" 
+        data-i18n-placeholder="amount_placeholder"
+        placeholder="Enter amount" 
         value="1" 
         min="0"
         step="0.01"
         oninput="validateAndConvert(this.value)"
       >
+      <i class="fas fa-dollar-sign input-icon"></i>
     </div>
-    <!-- 源货币搜索框，用于筛选下方的下拉选择 -->
+
     <div class="input-group">
+      <label for="sourceCurrencySearch" data-i18n="search_currency_label">Search Source Currency</label>
       <input 
         type="text" 
         id="sourceCurrencySearch" 
-        placeholder="输入ISO代码搜索源货币" 
+        data-i18n-placeholder="search_currency_placeholder"
+        placeholder="Enter ISO code to search source currency" 
         oninput="filterSourceCurrency()"
         autocomplete="off"
       >
+      <i class="fas fa-search input-icon"></i>
     </div>
-    <!-- 源货币下拉选择（单选） -->
+
     <div class="input-group">
+      <label for="fromCurrency" data-i18n="from_currency_label">From Currency</label>
       <select id="fromCurrency"></select>
     </div>
+
     <div class="button-group">
-      <button onclick="openCurrencyModal()">管理货币</button>
-      <button onclick="resetToDefault()">重置默认</button>
+      <button class="primary-button" onclick="openCurrencyModal()">
+        <i class="fas fa-cog"></i>
+        <span data-i18n="manage_currencies">Manage Currencies</span>
+      </button>
+      <button class="secondary-button" onclick="resetToDefault()">
+        <i class="fas fa-undo"></i>
+        <span data-i18n="reset_default">Reset to Default</span>
+      </button>
     </div>
+
     <div id="currencyList"></div>
     <div id="rateInfo" class="rate-info"></div>
   </div>
 
   <div class="modal" id="currencyModal" onclick="handleModalClick(event)">
     <div class="modal-content">
-      <h2>管理货币</h2>
-      <input 
-        type="text" 
-        id="currencySearch" 
-        placeholder="输入ISO代码搜索" 
-        oninput="filterCurrencies()"
-        autocomplete="off"
-      >
+      <h2 data-i18n="manage_currencies_title">Manage Currencies</h2>
+      <div class="input-group">
+        <input 
+          type="text" 
+          id="currencySearch" 
+          data-i18n-placeholder="search_currencies_placeholder"
+          placeholder="Enter ISO code to search" 
+          oninput="filterCurrencies()"
+          autocomplete="off"
+        >
+        <i class="fas fa-search input-icon"></i>
+      </div>
       <div id="currencyOptions" class="currency-grid"></div>
       <div style="margin-top: 20px;">
-        <button onclick="saveSelections()" id="saveButton">保存更改</button>
-        <button onclick="closeCurrencyModal()" style="margin-left: 10px; background-color: #6c757d;">取消</button>
+        <button class="primary-button" onclick="saveSelections()" id="saveButton">
+          <i class="fas fa-save"></i>
+          <span data-i18n="save_changes">Save Changes</span>
+        </button>
+        <button class="secondary-button" onclick="closeCurrencyModal()" style="margin-left: 10px;">
+          <i class="fas fa-times"></i>
+          <span data-i18n="cancel">Cancel</span>
+        </button>
       </div>
     </div>
   </div>
 
   <script>
+    // 多语言支持系统
+    const translations = {
+      'en': {
+        title: 'Currency Converter',
+        subtitle: 'Convert currencies with real-time exchange rates',
+        amount_label: 'Amount',
+        amount_placeholder: 'Enter amount',
+        search_currency_label: 'Search Source Currency',
+        search_currency_placeholder: 'Enter ISO code to search source currency',
+        from_currency_label: 'From Currency',
+        manage_currencies: 'Manage Currencies',
+        reset_default: 'Reset to Default',
+        manage_currencies_title: 'Manage Currencies',
+        search_currencies_placeholder: 'Enter ISO code to search',
+        save_changes: 'Save Changes',
+        cancel: 'Cancel',
+        loading: 'Loading...',
+        error_fetch_rates: 'Failed to fetch exchange rates, please try again later.',
+        error_invalid_amount: 'Please enter a valid amount',
+        error_invalid_currency: 'Invalid source currency',
+        error_negative_amount: 'Amount cannot be negative',
+        error_no_rate_data: 'Exchange rate data not loaded',
+        success_currencies_updated: 'Currency selection updated',
+        success_reset_default: 'Reset to default currencies',
+        confirm_reset: 'Are you sure you want to reset to default currency list?',
+        alert_select_currency: 'Please select at least one currency',
+        no_matching_currencies: 'No matching currencies found',
+        last_updated: 'Last updated',
+        refresh: 'Refresh',
+        currencies_group: 'Currencies',
+        last_update_time: 'Last update time',
+        rate_not_loaded: 'Exchange rate data not loaded',
+        no_currency_found: 'No matching currencies found',
+        currencies: 'Currencies',
+        select_at_least_one: 'Please select at least one currency',
+        currency_updated: 'Currency selection updated',
+        reset_success: 'Reset to default currencies',
+        invalid_amount: 'Please enter a valid amount',
+        invalid_source_currency: 'Invalid source currency',
+        no_matching_currency: 'No matching currencies',
+        negative_amount: 'Amount cannot be negative'
+      },
+      'zh': {
+        title: '货币转换器',
+        subtitle: '实时汇率货币转换',
+        amount_label: '金额',
+        amount_placeholder: '输入金额',
+        search_currency_label: '搜索源货币',
+        search_currency_placeholder: '输入ISO代码搜索源货币',
+        from_currency_label: '源货币',
+        manage_currencies: '管理货币',
+        reset_default: '重置默认',
+        manage_currencies_title: '管理货币',
+        search_currencies_placeholder: '输入ISO代码搜索',
+        save_changes: '保存更改',
+        cancel: '取消',
+        loading: '加载中...',
+        error_fetch_rates: '获取汇率失败，请稍后重试。',
+        error_invalid_amount: '请输入有效的金额',
+        error_invalid_currency: '无效的源货币',
+        error_negative_amount: '金额不能为负数',
+        error_no_rate_data: '汇率数据未加载',
+        success_currencies_updated: '货币选择已更新',
+        success_reset_default: '已重置为默认货币',
+        confirm_reset: '确定要重置为默认货币列表吗？',
+        alert_select_currency: '请至少选择一种货币',
+        no_matching_currencies: '未找到匹配的货币',
+        last_updated: '最后更新时间',
+        refresh: '刷新',
+        currencies_group: '货币',
+        last_update_time: '最后更新时间',
+        rate_not_loaded: '汇率数据未加载',
+        no_currency_found: '未找到匹配的货币',
+        currencies: '货币',
+        select_at_least_one: '请至少选择一种货币',
+        currency_updated: '货币选择已更新',
+        reset_success: '已重置为默认货币',
+        invalid_amount: '请输入有效的金额',
+        invalid_source_currency: '无效的源货币',
+        no_matching_currency: '无匹配货币',
+        negative_amount: '金额不能为负数'
+      },
+      'es': {
+        title: 'Conversor de Monedas',
+        subtitle: 'Convierte monedas con tipos de cambio en tiempo real',
+        amount_label: 'Cantidad',
+        amount_placeholder: 'Ingrese la cantidad',
+        search_currency_label: 'Buscar Moneda de Origen',
+        search_currency_placeholder: 'Ingrese código ISO para buscar moneda de origen',
+        from_currency_label: 'Desde Moneda',
+        manage_currencies: 'Gestionar Monedas',
+        reset_default: 'Restablecer Predeterminado',
+        manage_currencies_title: 'Gestionar Monedas',
+        search_currencies_placeholder: 'Ingrese código ISO para buscar',
+        save_changes: 'Guardar Cambios',
+        cancel: 'Cancelar',
+        loading: 'Cargando...',
+        error_fetch_rates: 'Error al obtener tipos de cambio, inténtelo más tarde.',
+        error_invalid_amount: 'Por favor ingrese una cantidad válida',
+        error_invalid_currency: 'Moneda de origen inválida',
+        error_negative_amount: 'La cantidad no puede ser negativa',
+        error_no_rate_data: 'Datos de tipo de cambio no cargados',
+        success_currencies_updated: 'Selección de monedas actualizada',
+        success_reset_default: 'Restablecido a monedas predeterminadas',
+        confirm_reset: '¿Está seguro de que desea restablecer a la lista de monedas predeterminada?',
+        alert_select_currency: 'Por favor seleccione al menos una moneda',
+        no_matching_currencies: 'No se encontraron monedas coincidentes',
+        last_updated: 'Última actualización',
+        refresh: 'Actualizar',
+        currencies_group: 'Monedas',
+        last_update_time: 'Hora de última actualización',
+        rate_not_loaded: 'Datos de tipo de cambio no cargados',
+        no_currency_found: 'No se encontraron monedas coincidentes',
+        currencies: 'Monedas',
+        select_at_least_one: 'Por favor seleccione al menos una moneda',
+        currency_updated: 'Selección de monedas actualizada',
+        reset_success: 'Restablecido a monedas predeterminadas',
+        invalid_amount: 'Por favor ingrese una cantidad válida',
+        invalid_source_currency: 'Moneda de origen inválida',
+        no_matching_currency: 'No hay monedas coincidentes',
+        negative_amount: 'La cantidad no puede ser negativa'
+      },
+      'fr': {
+        title: 'Convertisseur de Devises',
+        subtitle: 'Convertissez les devises avec des taux de change en temps réel',
+        amount_label: 'Montant',
+        amount_placeholder: 'Entrez le montant',
+        search_currency_label: 'Rechercher Devise Source',
+        search_currency_placeholder: 'Entrez le code ISO pour rechercher la devise source',
+        from_currency_label: 'Depuis Devise',
+        manage_currencies: 'Gérer les Devises',
+        reset_default: 'Réinitialiser par Défaut',
+        manage_currencies_title: 'Gérer les Devises',
+        search_currencies_placeholder: 'Entrez le code ISO pour rechercher',
+        save_changes: 'Sauvegarder les Modifications',
+        cancel: 'Annuler',
+        loading: 'Chargement...',
+        error_fetch_rates: 'Échec de récupération des taux de change, veuillez réessayer plus tard.',
+        error_invalid_amount: 'Veuillez entrer un montant valide',
+        error_invalid_currency: 'Devise source invalide',
+        error_negative_amount: 'Le montant ne peut pas être négatif',
+        error_no_rate_data: 'Données de taux de change non chargées',
+        success_currencies_updated: 'Sélection de devises mise à jour',
+        success_reset_default: 'Réinitialisé aux devises par défaut',
+        confirm_reset: 'Êtes-vous sûr de vouloir réinitialiser à la liste de devises par défaut?',
+        alert_select_currency: 'Veuillez sélectionner au moins une devise',
+        no_matching_currencies: 'Aucune devise correspondante trouvée',
+        last_updated: 'Dernière mise à jour',
+        refresh: 'Actualiser',
+        currencies_group: 'Devises',
+        last_update_time: 'Heure de dernière mise à jour',
+        rate_not_loaded: 'Données de taux de change non chargées',
+        no_currency_found: 'Aucune devise correspondante trouvée',
+        currencies: 'Devises',
+        select_at_least_one: 'Veuillez sélectionner au moins une devise',
+        currency_updated: 'Sélection de devises mise à jour',
+        reset_success: 'Réinitialisé aux devises par défaut',
+        invalid_amount: 'Veuillez entrer un montant valide',
+        invalid_source_currency: 'Devise source invalide',
+        no_matching_currency: 'Aucune devise correspondante',
+        negative_amount: 'Le montant ne peut pas être négatif'
+      },
+      'de': {
+        title: 'Währungsrechner',
+        subtitle: 'Währungen mit Echtzeit-Wechselkursen umrechnen',
+        amount_label: 'Betrag',
+        amount_placeholder: 'Betrag eingeben',
+        search_currency_label: 'Quellwährung Suchen',
+        search_currency_placeholder: 'ISO-Code eingeben um Quellwährung zu suchen',
+        from_currency_label: 'Von Währung',
+        manage_currencies: 'Währungen Verwalten',
+        reset_default: 'Standard Zurücksetzen',
+        manage_currencies_title: 'Währungen Verwalten',
+        search_currencies_placeholder: 'ISO-Code eingeben zum Suchen',
+        save_changes: 'Änderungen Speichern',
+        cancel: 'Abbrechen',
+        loading: 'Laden...',
+        error_fetch_rates: 'Fehler beim Abrufen der Wechselkurse, bitte später versuchen.',
+        error_invalid_amount: 'Bitte geben Sie einen gültigen Betrag ein',
+        error_invalid_currency: 'Ungültige Quellwährung',
+        error_negative_amount: 'Betrag kann nicht negativ sein',
+        error_no_rate_data: 'Wechselkursdaten nicht geladen',
+        success_currencies_updated: 'Währungsauswahl aktualisiert',
+        success_reset_default: 'Auf Standardwährungen zurückgesetzt',
+        confirm_reset: 'Sind Sie sicher, dass Sie auf die Standard-Währungsliste zurücksetzen möchten?',
+        alert_select_currency: 'Bitte wählen Sie mindestens eine Währung aus',
+        no_matching_currencies: 'Keine passenden Währungen gefunden',
+        last_updated: 'Zuletzt aktualisiert',
+        refresh: 'Aktualisieren',
+        currencies_group: 'Währungen',
+        last_update_time: 'Letzte Aktualisierungszeit',
+        rate_not_loaded: 'Wechselkursdaten nicht geladen',
+        no_currency_found: 'Keine passenden Währungen gefunden',
+        currencies: 'Währungen',
+        select_at_least_one: 'Bitte wählen Sie mindestens eine Währung aus',
+        currency_updated: 'Währungsauswahl aktualisiert',
+        reset_success: 'Auf Standardwährungen zurückgesetzt',
+        invalid_amount: 'Bitte geben Sie einen gültigen Betrag ein',
+        invalid_source_currency: 'Ungültige Quellwährung',
+        no_matching_currency: 'Keine passenden Währungen',
+        negative_amount: 'Betrag kann nicht negativ sein'
+      },
+      'ja': {
+        title: '通貨コンバーター',
+        subtitle: 'リアルタイム為替レートで通貨を変換',
+        amount_label: '金額',
+        amount_placeholder: '金額を入力',
+        search_currency_label: 'ソース通貨を検索',
+        search_currency_placeholder: 'ISOコードを入力してソース通貨を検索',
+        from_currency_label: '変換元通貨',
+        manage_currencies: '通貨管理',
+        reset_default: 'デフォルトにリセット',
+        manage_currencies_title: '通貨管理',
+        search_currencies_placeholder: 'ISOコードを入力して検索',
+        save_changes: '変更を保存',
+        cancel: 'キャンセル',
+        loading: '読み込み中...',
+        error_fetch_rates: '為替レートの取得に失敗しました。後でもう一度お試しください。',
+        error_invalid_amount: '有効な金額を入力してください',
+        error_invalid_currency: '無効なソース通貨',
+        error_negative_amount: '金額は負の値にできません',
+        error_no_rate_data: '為替レートデータが読み込まれていません',
+        success_currencies_updated: '通貨選択が更新されました',
+        success_reset_default: 'デフォルト通貨にリセットしました',
+        confirm_reset: 'デフォルトの通貨リストにリセットしてもよろしいですか？',
+        alert_select_currency: '少なくとも1つの通貨を選択してください',
+        no_matching_currencies: '一致する通貨が見つかりません',
+        last_updated: '最終更新',
+        refresh: '更新',
+        currencies_group: '通貨',
+        last_update_time: '最終更新時刻',
+        rate_not_loaded: '為替レートデータが読み込まれていません',
+        no_currency_found: '一致する通貨が見つかりません',
+        currencies: '通貨',
+        select_at_least_one: '少なくとも1つの通貨を選択してください',
+        currency_updated: '通貨選択が更新されました',
+        reset_success: 'デフォルト通貨にリセットしました',
+        invalid_amount: '有効な金額を入力してください',
+        invalid_source_currency: '無効なソース通貨',
+        no_matching_currency: '一致する通貨がありません',
+        negative_amount: '金額は負の値にできません'
+      },
+      'ko': {
+        title: '환율 변환기',
+        subtitle: '실시간 환율로 통화 변환',
+        amount_label: '금액',
+        amount_placeholder: '금액 입력',
+        search_currency_label: '소스 통화 검색',
+        search_currency_placeholder: 'ISO 코드를 입력하여 소스 통화 검색',
+        from_currency_label: '변환할 통화',
+        manage_currencies: '통화 관리',
+        reset_default: '기본값으로 재설정',
+        manage_currencies_title: '통화 관리',
+        search_currencies_placeholder: 'ISO 코드를 입력하여 검색',
+        save_changes: '변경사항 저장',
+        cancel: '취소',
+        loading: '로딩 중...',
+        error_fetch_rates: '환율 가져오기 실패, 나중에 다시 시도해주세요.',
+        error_invalid_amount: '유효한 금액을 입력해주세요',
+        error_invalid_currency: '유효하지 않은 소스 통화',
+        error_negative_amount: '금액은 음수가 될 수 없습니다',
+        error_no_rate_data: '환율 데이터가 로드되지 않았습니다',
+        success_currencies_updated: '통화 선택이 업데이트되었습니다',
+        success_reset_default: '기본 통화로 재설정되었습니다',
+        confirm_reset: '기본 통화 목록으로 재설정하시겠습니까?',
+        alert_select_currency: '최소 하나의 통화를 선택해주세요',
+        no_matching_currencies: '일치하는 통화를 찾을 수 없습니다',
+        last_updated: '마지막 업데이트',
+        refresh: '새로고침',
+        currencies_group: '통화',
+        last_update_time: '마지막 업데이트 시간',
+        rate_not_loaded: '환율 데이터가 로드되지 않았습니다',
+        no_currency_found: '일치하는 통화를 찾을 수 없습니다',
+        currencies: '통화',
+        select_at_least_one: '최소 하나의 통화를 선택해주세요',
+        currency_updated: '통화 선택이 업데이트되었습니다',
+        reset_success: '기본 통화로 재설정되었습니다',
+        invalid_amount: '유효한 금액을 입력해주세요',
+        invalid_source_currency: '유효하지 않은 소스 통화',
+        no_matching_currency: '일치하는 통화가 없습니다',
+        negative_amount: '금액은 음수가 될 수 없습니다'
+      },
+      'pt': {
+        title: 'Conversor de Moedas',
+        subtitle: 'Converta moedas com taxas de câmbio em tempo real',
+        amount_label: 'Quantia',
+        amount_placeholder: 'Digite a quantia',
+        search_currency_label: 'Pesquisar Moeda de Origem',
+        search_currency_placeholder: 'Digite o código ISO para pesquisar moeda de origem',
+        from_currency_label: 'Da Moeda',
+        manage_currencies: 'Gerenciar Moedas',
+        reset_default: 'Redefinir Padrão',
+        manage_currencies_title: 'Gerenciar Moedas',
+        search_currencies_placeholder: 'Digite o código ISO para pesquisar',
+        save_changes: 'Salvar Alterações',
+        cancel: 'Cancelar',
+        loading: 'Carregando...',
+        error_fetch_rates: 'Falha ao buscar taxas de câmbio, tente novamente mais tarde.',
+        error_invalid_amount: 'Por favor, digite uma quantia válida',
+        error_invalid_currency: 'Moeda de origem inválida',
+        error_negative_amount: 'A quantia não pode ser negativa',
+        error_no_rate_data: 'Dados de taxa de câmbio não carregados',
+        success_currencies_updated: 'Seleção de moedas atualizada',
+        success_reset_default: 'Redefinido para moedas padrão',
+        confirm_reset: 'Tem certeza de que deseja redefinir para a lista de moedas padrão?',
+        alert_select_currency: 'Por favor, selecione pelo menos uma moeda',
+        no_matching_currencies: 'Nenhuma moeda correspondente encontrada',
+        last_updated: 'Última atualização',
+        refresh: 'Atualizar',
+        currencies_group: 'Moedas',
+        last_update_time: 'Hora da última atualização',
+        rate_not_loaded: 'Dados de taxa de câmbio não carregados',
+        no_currency_found: 'Nenhuma moeda correspondente encontrada',
+        currencies: 'Moedas',
+        select_at_least_one: 'Por favor, selecione pelo menos uma moeda',
+        currency_updated: 'Seleção de moedas atualizada',
+        reset_success: 'Redefinido para moedas padrão',
+        invalid_amount: 'Por favor, digite uma quantia válida',
+        invalid_source_currency: 'Moeda de origem inválida',
+        no_matching_currency: 'Nenhuma moeda correspondente',
+        negative_amount: 'A quantia não pode ser negativa'
+      },
+      'ru': {
+        title: 'Конвертер Валют',
+        subtitle: 'Конвертируйте валюты с курсами в реальном времени',
+        amount_label: 'Сумма',
+        amount_placeholder: 'Введите сумму',
+        search_currency_label: 'Поиск Исходной Валюты',
+        search_currency_placeholder: 'Введите ISO код для поиска исходной валюты',
+        from_currency_label: 'Из Валюты',
+        manage_currencies: 'Управление Валютами',
+        reset_default: 'Сбросить по Умолчанию',
+        manage_currencies_title: 'Управление Валютами',
+        search_currencies_placeholder: 'Введите ISO код для поиска',
+        save_changes: 'Сохранить Изменения',
+        cancel: 'Отмена',
+        loading: 'Загрузка...',
+        error_fetch_rates: 'Не удалось получить курсы валют, попробуйте позже.',
+        error_invalid_amount: 'Пожалуйста, введите действительную сумму',
+        error_invalid_currency: 'Недействительная исходная валюта',
+        error_negative_amount: 'Сумма не может быть отрицательной',
+        error_no_rate_data: 'Данные курса валют не загружены',
+        success_currencies_updated: 'Выбор валют обновлен',
+        success_reset_default: 'Сброшено к валютам по умолчанию',
+        confirm_reset: 'Вы уверены, что хотите сбросить к списку валют по умолчанию?',
+        alert_select_currency: 'Пожалуйста, выберите хотя бы одну валюту',
+        no_matching_currencies: 'Соответствующие валюты не найдены',
+        last_updated: 'Последнее обновление',
+        refresh: 'Обновить',
+        currencies_group: 'Валюты',
+        last_update_time: 'Время последнего обновления',
+        rate_not_loaded: 'Данные курса валют не загружены',
+        no_currency_found: 'Соответствующие валюты не найдены',
+        currencies: 'Валюты',
+        select_at_least_one: 'Пожалуйста, выберите хотя бы одну валюту',
+        currency_updated: 'Выбор валют обновлен',
+        reset_success: 'Сброшено к валютам по умолчанию',
+        invalid_amount: 'Пожалуйста, введите действительную сумму',
+        invalid_source_currency: 'Недействительная исходная валюта',
+        no_matching_currency: 'Нет соответствующих валют',
+        negative_amount: 'Сумма не может быть отрицательной'
+      },
+      'ar': {
+        title: 'محول العملات',
+        subtitle: 'تحويل العملات بأسعار صرف فورية',
+        amount_label: 'المبلغ',
+        amount_placeholder: 'أدخل المبلغ',
+        search_currency_label: 'البحث عن العملة المصدر',
+        search_currency_placeholder: 'أدخل رمز ISO للبحث عن العملة المصدر',
+        from_currency_label: 'من العملة',
+        manage_currencies: 'إدارة العملات',
+        reset_default: 'إعادة تعيين افتراضي',
+        manage_currencies_title: 'إدارة العملات',
+        search_currencies_placeholder: 'أدخل رمز ISO للبحث',
+        save_changes: 'حفظ التغييرات',
+        cancel: 'إلغاء',
+        loading: 'جاري التحميل...',
+        error_fetch_rates: 'فشل في جلب أسعار الصرف، يرجى المحاولة لاحقاً.',
+        error_invalid_amount: 'يرجى إدخال مبلغ صحيح',
+        error_invalid_currency: 'عملة مصدر غير صحيحة',
+        error_negative_amount: 'لا يمكن أن يكون المبلغ سالباً',
+        error_no_rate_data: 'بيانات أسعار الصرف غير محملة',
+        success_currencies_updated: 'تم تحديث اختيار العملات',
+        success_reset_default: 'تم إعادة التعيين للعملات الافتراضية',
+        confirm_reset: 'هل أنت متأكد من أنك تريد إعادة التعيين لقائمة العملات الافتراضية؟',
+        alert_select_currency: 'يرجى اختيار عملة واحدة على الأقل',
+        no_matching_currencies: 'لم يتم العثور على عملات مطابقة',
+        last_updated: 'آخر تحديث',
+        refresh: 'تحديث',
+        currencies_group: 'العملات',
+        last_update_time: 'وقت آخر تحديث',
+        rate_not_loaded: 'بيانات أسعار الصرف غير محملة',
+        no_currency_found: 'لم يتم العثور على عملات مطابقة',
+        currencies: 'العملات',
+        select_at_least_one: 'يرجى اختيار عملة واحدة على الأقل',
+        currency_updated: 'تم تحديث اختيار العملات',
+        reset_success: 'تم إعادة التعيين للعملات الافتراضية',
+        invalid_amount: 'يرجى إدخال مبلغ صحيح',
+        invalid_source_currency: 'عملة مصدر غير صحيحة',
+        no_matching_currency: 'لا توجد عملات مطابقة',
+        negative_amount: 'لا يمكن أن يكون المبلغ سالباً'
+      }
+    };
+
+    // 语言检测和管理
+    let currentLanguage = 'en';
+    const supportedLanguages = [
+      { code: 'en', name: 'English', flag: 'us' },
+      { code: 'zh', name: '中文', flag: 'cn' },
+      { code: 'es', name: 'Español', flag: 'es' },
+      { code: 'fr', name: 'Français', flag: 'fr' },
+      { code: 'de', name: 'Deutsch', flag: 'de' },
+      { code: 'ja', name: '日本語', flag: 'jp' },
+      { code: 'ko', name: '한국어', flag: 'kr' },
+      { code: 'pt', name: 'Português', flag: 'pt' },
+      { code: 'ru', name: 'Русский', flag: 'ru' },
+      { code: 'ar', name: 'العربية', flag: 'sa' }
+    ];
+
+    // 根据用户代理检测语言
+    function detectLanguageFromUA() {
+      const userAgent = navigator.userAgent;
+      const language = navigator.language || navigator.userLanguage;
+      const langCode = language.split('-')[0].toLowerCase();
+      
+      // 检查是否支持检测到的语言
+      if (translations[langCode]) {
+        return langCode;
+      }
+      
+      // 根据用户代理中的特定标识符进行更精确的检测
+      const uaLangMap = {
+        'zh': /zh|chinese|中文/i,
+        'ja': /ja|japanese|日本/i,
+        'ko': /ko|korean|한국/i,
+        'ar': /ar|arabic|العربية/i,
+        'ru': /ru|russian|русский/i,
+        'de': /de|german|deutsch/i,
+        'fr': /fr|french|français/i,
+        'es': /es|spanish|español/i,
+        'pt': /pt|portuguese|português/i
+      };
+      
+      for (const [lang, regex] of Object.entries(uaLangMap)) {
+        if (regex.test(userAgent) || regex.test(language)) {
+          return lang;
+        }
+      }
+      
+      return 'en'; // 默认英语
+    }
+
+    // 翻译函数
+    function t(key) {
+      return translations[currentLanguage][key] || translations['en'][key] || key;
+    }
+
+    // 更新页面文本
+    function updatePageLanguage() {
+      // 更新所有带有 data-i18n 属性的元素
+      document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        element.textContent = t(key);
+      });
+
+      // 更新所有带有 data-i18n-placeholder 属性的元素
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        element.placeholder = t(key);
+      });
+
+      // 更新页面标题和语言属性
+      document.title = t('title');
+      document.documentElement.lang = currentLanguage;
+
+      // 更新当前语言显示
+      const currentLangElement = document.getElementById('currentLanguage');
+      if (currentLangElement) {
+        const langInfo = supportedLanguages.find(lang => lang.code === currentLanguage);
+        currentLangElement.textContent = langInfo ? langInfo.name : 'English';
+      }
+
+      // 保存语言选择
+      localStorage.setItem('selectedLanguage', currentLanguage);
+    }
+
+    // 切换语言
+    function changeLanguage(langCode) {
+      if (translations[langCode]) {
+        currentLanguage = langCode;
+        updatePageLanguage();
+        toggleLanguageDropdown(); // 关闭下拉菜单
+        
+        // 重新转换货币以更新错误消息等
+        if (typeof convertToMultipleCurrencies === 'function') {
+          convertToMultipleCurrencies();
+        }
+      }
+    }
+
+    // 切换语言下拉菜单
+    function toggleLanguageDropdown() {
+      const dropdown = document.getElementById('languageDropdown');
+      const isVisible = dropdown.style.display === 'block';
+      dropdown.style.display = isVisible ? 'none' : 'block';
+      
+      if (!isVisible) {
+        populateLanguageDropdown();
+      }
+    }
+
+    // 填充语言下拉菜单
+    function populateLanguageDropdown() {
+      const dropdown = document.getElementById('languageDropdown');
+      dropdown.innerHTML = '';
+      
+      supportedLanguages.forEach(lang => {
+        const option = document.createElement('div');
+        option.className = 'language-option';
+        if (lang.code === currentLanguage) {
+          option.classList.add('active');
+        }
+        
+        option.innerHTML = `
+          <span class="fi fi-${lang.flag}"></span>
+          <span>${lang.name}</span>
+        `;
+        
+        option.onclick = () => changeLanguage(lang.code);
+        dropdown.appendChild(option);
+      });
+    }
+
+    // 点击外部关闭语言下拉菜单
+    document.addEventListener('click', function(event) {
+      const languageSelector = document.querySelector('.language-selector');
+      const dropdown = document.getElementById('languageDropdown');
+      
+      if (languageSelector && !languageSelector.contains(event.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+
     // 货币对应国旗映射（使用 ISO 国家代码，部分货币可能需要自定义映射）
     const currencyFlagMapping = {
       "ANG": "cw",
@@ -394,7 +1206,7 @@
     async function fetchRates(showLoading = true) {
       try {
         if (showLoading) {
-          document.getElementById('currencyList').innerHTML = '<div class="loading">加载中...</div>';
+          document.getElementById('currencyList').innerHTML = `<div class="loading">${t('loading')}</div>`;
         }
         const response = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
         currentRates = response.data.rates;
@@ -404,7 +1216,7 @@
       } catch (error) {
         console.error("获取汇率失败:", error);
         document.getElementById('currencyList').innerHTML = 
-          '<div class="error-message">获取汇率失败，请稍后重试。</div>';
+          `<div class="error-message">${t('error_fetch_rates')}</div>`;
         return null;
       }
     }
@@ -412,9 +1224,10 @@
     function updateRateInfo() {
       const rateInfo = document.getElementById('rateInfo');
       if (lastRateUpdate) {
+        const timeString = lastRateUpdate.toLocaleTimeString(currentLanguage === 'zh' ? 'zh-CN' : 'en-US');
         rateInfo.innerHTML = `
-          最后更新时间: ${lastRateUpdate.toLocaleTimeString()}
-          <button class="refresh-button" onclick="refreshRates()">刷新</button>
+          ${t('last_update_time')}: ${timeString}
+          <button class="refresh-button" onclick="refreshRates()">${t('refresh')}</button>
         `;
       }
     }
@@ -462,7 +1275,7 @@
       const container = document.getElementById("currencyOptions");
       container.innerHTML = "";
       if (currenciesToDisplay.length === 0) {
-        container.innerHTML = '<div class="no-results">未找到匹配的货币</div>';
+        container.innerHTML = `<div class="no-results">${t('no_currency_found')}</div>`;
         return;
       }
       const chunkSize = 25;
@@ -472,7 +1285,7 @@
         const groupDiv = document.createElement("div");
         groupDiv.className = "currency-box";
         const title = document.createElement("div");
-        title.textContent = `货币 ${i+1}-${Math.min(i+chunkSize, sortedCurrencies.length)}`;
+        title.textContent = `${t('currencies')} ${i+1}-${Math.min(i+chunkSize, sortedCurrencies.length)}`;
         title.style.fontWeight = "bold";
         title.style.marginBottom = "10px";
         groupDiv.appendChild(title);
@@ -513,7 +1326,7 @@
 
     function saveSelections() {
       if (currentSelections.size === 0) {
-        alert('请至少选择一种货币');
+        alert(t('select_at_least_one'));
         return;
       }
       selectedCurrencies = Array.from(currentSelections);
@@ -526,7 +1339,7 @@
       convertToMultipleCurrencies();
       closeCurrencyModal();
       const container = document.getElementById('currencyList');
-      container.insertAdjacentHTML('beforebegin', '<div class="success-message">货币选择已更新</div>');
+      container.insertAdjacentHTML('beforebegin', `<div class="success-message">${t('currency_updated')}</div>`);
       setTimeout(() => {
         const message = document.querySelector('.success-message');
         if (message) message.remove();
@@ -534,7 +1347,7 @@
     }
 
     function resetToDefault() {
-      if (!confirm('确定要重置为默认货币列表吗？')) {
+      if (!confirm(t('confirm_reset'))) {
         return;
       }
       selectedCurrencies = [...commonCurrencies];
@@ -546,7 +1359,7 @@
       document.getElementById("fromCurrency").value = "USD";
       convertToMultipleCurrencies();
       const container = document.getElementById('currencyList');
-      container.insertAdjacentHTML('beforebegin', '<div class="success-message">已重置为默认货币</div>');
+      container.insertAdjacentHTML('beforebegin', `<div class="success-message">${t('reset_success')}</div>`);
       setTimeout(() => {
         const message = document.querySelector('.success-message');
         if (message) message.remove();
@@ -556,7 +1369,7 @@
     function validateAndConvert(value) {
       const amount = parseFloat(value);
       if (isNaN(amount) || amount < 0) {
-        document.getElementById('currencyList').innerHTML = '<div class="error-message">请输入有效的金额</div>';
+        document.getElementById('currencyList').innerHTML = `<div class="error-message">${t('invalid_amount')}</div>`;
         return;
       }
       convertToMultipleCurrencies();
@@ -565,7 +1378,7 @@
     function handleCurrencyChange() {
       const fromCurrency = document.getElementById('fromCurrency').value;
       if (!currentRates || !currentRates[fromCurrency]) {
-        document.getElementById('currencyList').innerHTML = '<div class="error-message">无效的源货币</div>';
+        document.getElementById('currencyList').innerHTML = `<div class="error-message">${t('invalid_source_currency')}</div>`;
         return;
       }
       convertToMultipleCurrencies();
@@ -587,7 +1400,7 @@
       if (currenciesToDisplay.length === 0) {
         const option = document.createElement("option");
         option.value = "";
-        option.text = "无匹配货币";
+        option.text = t('no_matching_currency');
         fromSelect.appendChild(option);
       } else {
         currenciesToDisplay.sort().forEach(currency => {
@@ -663,15 +1476,15 @@
       const fromCurrency = document.getElementById('fromCurrency').value;
       const currencyList = document.getElementById('currencyList');
       if (!currentRates) {
-        currencyList.innerHTML = '<div class="error-message">汇率数据未加载</div>';
+        currencyList.innerHTML = `<div class="error-message">${t('rate_not_loaded')}</div>`;
         return;
       }
       if (!currentRates[fromCurrency]) {
-        currencyList.innerHTML = '<div class="error-message">无效的源货币</div>';
+        currencyList.innerHTML = `<div class="error-message">${t('invalid_source_currency')}</div>`;
         return;
       }
       if (amount < 0) {
-        currencyList.innerHTML = '<div class="error-message">金额不能为负数</div>';
+        currencyList.innerHTML = `<div class="error-message">${t('negative_amount')}</div>`;
         return;
       }
       
@@ -713,6 +1526,11 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      // 初始化多语言支持
+      currentLanguage = detectLanguageFromUA();
+      populateLanguageDropdown();
+      updatePageLanguage();
+      
       populateCurrencies();
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
