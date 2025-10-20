@@ -1392,41 +1392,64 @@
     }
 
     // 更新源货币下拉框选项，并保留select2效果
-    function updateSourceCurrencyOptions(currenciesToDisplay) {
-      const fromSelect = document.getElementById("fromCurrency");
-      const selectedValue = fromSelect.value;
-      fromSelect.innerHTML = "";
-      // 若无搜索结果，则显示提示信息
-      if (currenciesToDisplay.length === 0) {
-        const option = document.createElement("option");
-        option.value = "";
-        option.text = t('no_matching_currency');
-        fromSelect.appendChild(option);
-      } else {
-        currenciesToDisplay.sort().forEach(currency => {
-          const option = document.createElement("option");
-          option.value = currency;
-          option.text = currency;
-          fromSelect.appendChild(option);
-        });
-      }
-      // 如果之前选中的源货币仍存在则选中，否则默认选中第一个
-      if ([...fromSelect.options].some(opt => opt.value === selectedValue)) {
-        fromSelect.value = selectedValue;
-      } else if (fromSelect.options.length > 0) {
-        fromSelect.selectedIndex = 0;
-      }
-      // 重新初始化Select2
-      $('#fromCurrency').select2({
+    
+
+function updateSourceCurrencyOptions(currenciesToDisplay) {
+  const $from = $('#fromCurrency');
+  const fromSelect = document.getElementById("fromCurrency");
+  if (!fromSelect) return;
+
+  // Clear existing options
+  fromSelect.innerHTML = "";
+
+  if (!currenciesToDisplay || currenciesToDisplay.length === 0) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.disabled = true;
+    option.text = t('no_matching_currency') || 'No matching currency';
+    fromSelect.appendChild(option);
+    fromSelect.selectedIndex = 0;
+  } else {
+    currenciesToDisplay.sort().forEach(currency => {
+      const option = document.createElement("option");
+      option.value = currency;
+      option.text = currency;
+      fromSelect.appendChild(option);
+    });
+    // if previous selection still exists, keep it; otherwise select first
+    const prev = $from.data('prevValue') || '';
+    if ([...fromSelect.options].some(opt => opt.value === prev)) {
+      fromSelect.value = prev;
+    } else {
+      fromSelect.selectedIndex = 0;
+    }
+  }
+
+  // If select2 is initialized, update its displayed value; otherwise, initialize once.
+  try {
+    if ($from.hasClass('select2-hidden-accessible')) {
+      // update select2 without destroying
+      $from.trigger('change.select2');
+    } else {
+      $from.select2({
         templateResult: formatCurrency,
         templateSelection: formatCurrency,
         minimumResultsForSearch: Infinity
-      }).on('change', handleCurrencyChange);
-      // 调用转换函数更新结果
-      handleCurrencyChange();
+      });
+      $from.on('change', handleCurrencyChange);
     }
+  } catch(e) {
+    // fallback to simple change handler
+    $from.off('change').on('change', handleCurrencyChange);
+  }
 
-    function initializeSortable() {
+  // store current value for potential future restores
+  $from.data('prevValue', fromSelect.value);
+
+  // sync UI
+  try { handleCurrencyChange(); } catch(e) {}
+}
+function initializeSortable() {
       const currencyList = document.getElementById('currencyList');
       if (sortableList) {
         sortableList.destroy();
@@ -1449,25 +1472,36 @@
     async function populateCurrencies() {
       const rates = await fetchRates();
       if (!rates) return;
-      const fromSelect = document.getElementById("fromCurrency");
-      fromSelect.innerHTML = "";
-      allCurrencies = Object.keys(rates).sort();
-      // 初始填充所有货币到源货币下拉框
-      allCurrencies.forEach(currency => {
-        const option = document.createElement("option");
-        option.value = currency;
-        option.text = currency;
-        fromSelect.appendChild(option);
-      });
-      fromSelect.value = "USD";
-      // 初始化Select2，下拉框中已内置搜索功能，但我们另加了自定义搜索框
-      $('#fromCurrency').select2({
+      
+  // --- replaced init snippet: safe Select2 init ---
+  const fromSelect = document.getElementById("fromCurrency");
+  fromSelect.innerHTML = "";
+  allCurrencies = Object.keys(rates).sort();
+  allCurrencies.forEach(currency => {
+    const option = document.createElement("option");
+    option.value = currency;
+    option.text = currency;
+    fromSelect.appendChild(option);
+  });
+  fromSelect.value = "USD";
+
+  const $from = $('#fromCurrency');
+  if ($from.data && $from.data('select2')) {
+    try { $from.select2('destroy'); } catch(e) {}
+  }
+  $from.off('change');
+  if ($from.select2) {
+    try {
+      $from.select2({
         templateResult: formatCurrency,
         templateSelection: formatCurrency,
         minimumResultsForSearch: Infinity
       });
-      $('#fromCurrency').on('change', handleCurrencyChange);
-      startRateUpdateInterval();
+    } catch(e){}
+  }
+  $from.on('change', handleCurrencyChange);
+  // --- end replaced init snippet ---
+startRateUpdateInterval();
       convertToMultipleCurrencies();
     }
 
